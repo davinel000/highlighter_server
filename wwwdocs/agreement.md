@@ -1,0 +1,11 @@
+# Participation Agreement
+
+This experience collects anonymous highlights and feedback for research purposes.
+
+By selecting **Agree**, you confirm that you:
+
+- are participating voluntarily;
+- understand that your inputs may appear on shared screens;
+- will avoid submitting sensitive personal data.
+
+If you do not wish to participate, choose **Disagree** and speak with the facilitator.

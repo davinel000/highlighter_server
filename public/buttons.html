@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<base href="/docs/">
+<title>Control Panel</title>
+<link rel="stylesheet" href="styles.css?v=2025-10-16-1" />
+<body data-page="buttons" data-theme="">
+  <main class="buttons-wrap">
+    <header class="buttons-header">
+      <span class="pill">Panel:
+        <select id="panelSelect"></select>
+      </span>
+      <span class="pill">You: <b id="clientLbl"></b></span>
+      <span class="pill" id="cooldownPill" hidden>Cooldown: <b id="cooldownLbl"></b></span>
+      <span class="muted" id="status"></span>
+    </header>
+
+    <section class="buttons-grid" id="buttonsGrid"></section>
+  </main>
+
+  <script src="control.js?v=2025-10-16-1"></script>
+  <script src="buttons.js?v=2025-10-16-1"></script>
+</body>
+</html>

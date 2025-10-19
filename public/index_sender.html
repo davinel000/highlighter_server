@@ -1,0 +1,44 @@
+﻿<!doctype html>
+<html lang="ru">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<base href="/docs/">
+<title>Highlight</title>
+<link rel="stylesheet" href="styles.css?v=2025-10-16-1" />
+<body data-page="sender" data-theme="">
+  <div class="top" id="topbar">
+    <span class="pill">Doc:
+      <select id="docSelect"></select>
+    </span>
+    <span class="pill">Source:
+      <select id="sourceSelect"></select>
+    </span>
+    <span class="pill">You: <b id="clientLbl"></b></span>
+
+    <span class="pill">Color:
+      <span class="sw" data-c="c1" title="Red"></span>
+      <span class="sw" data-c="c2" title="Yellow"></span>
+      <span class="sw" data-c="c3" title="Green"></span>
+      <span class="sw" data-c="c4" title="Blue"></span>
+      <span class="sw" data-c="c5" title="Purple"></span>
+    </span>
+
+    <!-- Кнопки типографики -->
+    <span class="pill fsctl" aria-label="Font controls">
+      <button id="fsMinus" class="btn btn-sm" type="button" title="Уменьшить шрифт (A−)">A−</button>
+      <button id="fsPlus"  class="btn btn-sm" type="button" title="Увеличить шрифт (A+)">A+</button>
+    </span>
+
+    <span class="muted" id="status"></span>
+    <div class="row-spacer"></div>
+    <button id="resetDoc" class="btn">Reset</button>
+    <button id="clearBtn" class="btn">Clear</button>
+  </div>
+
+  <div class="padTop" id="padder"></div>
+  <div id="content"></div>
+
+  <script src="control.js?v=2025-10-16-1"></script>
+  <script src="sender.js?v=2025-10-16-1"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<base href="/docs/">
+<title>Send Text</title>
+<link rel="stylesheet" href="styles.css?v=2025-10-16-1" />
+<body data-page="form" data-theme="">
+  <main class="form-wrap">
+    <header class="form-header">
+      <span class="pill">Form:
+        <select id="formSelect"></select>
+      </span>
+      <span class="pill">You: <b id="clientLbl"></b></span>
+      <span class="muted" id="status"></span>
+    </header>
+
+    <section class="form-card" id="formCard">
+      <h1 id="question">Loading…</h1>
+      <textarea id="answer" rows="6" placeholder="Type your response here"></textarea>
+      <button class="btn primary" id="submitBtn" type="button">Send</button>
+    </section>
+
+  <section class="form-success hidden" id="successCard">
+    <p id="successMessage">Thank you for your response!</p>
+    <button class="btn" id="anotherBtn" type="button">Send another response</button>
+  </section>
+</main>
+
+  <script src="control.js?v=2025-10-16-1"></script>
+  <script src="form.js?v=2025-10-16-1"></script>
+</body>
+</html>

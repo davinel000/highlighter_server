@@ -1,0 +1,36 @@
+﻿<!doctype html>
+<html lang="ru">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<base href="/docs/">
+<title>Word Cloud</title>
+<link rel="stylesheet" href="styles.css?v=2025-10-15-1" />
+<body data-page="cloud" data-theme="">
+  <div class="top">
+    <label class="pill">
+      Doc:
+      <select id="docSelect"></select>
+    </label>
+    <button class="btn" data-colors="all">All</button>
+    <button class="btn" data-colors="c1">Red</button>
+    <button class="btn" data-colors="c2">Yellow</button>
+    <button class="btn" data-colors="c3">Green</button>
+    <button class="btn" data-colors="c4">Blue</button>
+    <button class="btn" data-colors="c5">Purple</button>
+    <span class="muted">Min freq:</span>
+    <input id="minFreq" type="number" min="1" value="1" class="num">
+    <label class="pill">
+      <input id="preferLongest" type="checkbox" checked> Longest phrase wins
+    </label>
+    <div style="flex:1"></div>
+    <button id="clearVotes" class="btn">Clear votes</button>
+    <button id="resetDoc" class="btn">Reset doc</button>
+    <button id="unlockBtn" class="btn">Unlock</button>
+    <button id="finishBtn" class="btn">Finish</button>
+  </div>
+  <div id="stage"></div>
+
+<script src="control.js?v=2025-10-16-1"></script>
+<script src="cloud.js?v=2025-10-15-1"></script>
+</body>
+</html>

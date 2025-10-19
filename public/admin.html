@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<base href="/docs/">
+<title>Server Dashboard</title>
+<link rel="stylesheet" href="styles.css?v=2025-10-16-1" />
+<body data-page="admin" data-theme="">
+  <main class="admin-wrap">
+    <h1>Server Dashboard</h1>
+
+    <section class="admin-card">
+      <h2>Remote Navigation</h2>
+      <div class="admin-grid three">
+        <label>
+          Group
+          <select id="navGroup">
+            <option value="all">All</option>
+            <option value="sender">Highlight (participants)</option>
+            <option value="form">Survey</option>
+            <option value="buttons">Buttons</option>
+            <option value="cloud">Cloud</option>
+          </select>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="debugToggle" checked /> Debug mode
+        </label>
+        <span></span>
+      </div>
+      <div class="admin-grid three" id="highlightControls">
+        <label>
+          Highlight doc
+          <select id="highlightDoc"></select>
+        </label>
+        <label>
+          Source file
+          <select id="highlightSource"></select>
+        </label>
+        <span></span>
+      </div>
+      <div class="admin-actions">
+        <button class="btn" data-nav="highlight">Highlight</button>
+        <button class="btn" data-nav="form">Survey</button>
+        <button class="btn" data-nav="buttons">Buttons</button>
+        <button class="btn" data-nav="cloud">Cloud</button>
+        <span class="muted flex-pad"></span>
+        <button class="btn" id="openTarget">Open</button>
+        <button class="btn primary" id="sendNavigate">Send navigate</button>
+        <button class="btn" id="sendReload">Reload</button>
+      </div>
+      <label>
+        Target URL (path)
+        <input id="navTarget" type="text" value="/docs/index_sender.html" />
+      </label>
+      <pre class="status" id="routerStatus">Router status pending.</pre>
+    </section>
+
+    <section class="admin-card" id="formsSection">
+      <h2>Survey (Send Text)</h2>
+      <div class="admin-grid three">
+        <label>
+          Form ID
+          <input type="text" id="formId" value="feedback" />
+        </label>
+        <label>
+          Cooldown (s)
+          <input type="number" min="0" step="1" id="formCooldown" />
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="formAllowRepeat" /> Allow repeat
+        </label>
+      </div>
+      <label>
+        Question
+        <textarea id="formQuestion" rows="2"></textarea>
+      </label>
+      <div class="admin-actions">
+        <button class="btn primary" id="formSave">Save config</button>
+        <button class="btn" id="formLock">Lock</button>
+        <button class="btn" id="formUnlock">Unlock</button>
+        <button class="btn" id="formClear">Clear responses</button>
+        <span class="muted" id="formStatus"></span>
+      </div>
+      <table id="formResults">
+        <thead>
+          <tr><th>Seq</th><th>Client</th><th>Question</th><th>Answer</th><th>Submitted</th><th>ISO</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="admin-card" id="buttonsSection">
+      <h2>Button Panel</h2>
+      <div class="admin-grid three">
+        <label>
+          Panel ID
+          <input type="text" id="panelId" value="main" />
+        </label>
+        <label>
+          Cooldown (s)
+          <input type="number" min="0" step="1" id="panelCooldown" />
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="panelLocked" /> Locked
+        </label>
+      </div>
+      <div class="admin-actions">
+        <button class="btn primary" id="panelSave">Save config</button>
+        <button class="btn" id="panelLock">Lock</button>
+        <button class="btn" id="panelUnlock">Unlock</button>
+        <button class="btn" id="panelReset">Reset counters</button>
+        <span class="muted" id="panelStatus"></span>
+      </div>
+      <h3>Counts</h3>
+      <table id="panelCounts">
+        <thead>
+          <tr><th>Button</th><th>Minus</th><th>Plus</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h3>Events</h3>
+      <table id="panelEvents">
+        <thead>
+          <tr><th>Seq</th><th>Button</th><th>Label</th><th>Dir</th><th>Client</th><th>Timestamp</th><th>ISO</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="admin.js?v=2025-10-16-1"></script>
+</body>
+</html>
