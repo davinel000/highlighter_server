@@ -1,4 +1,4 @@
-"""TouchDesigner utility extension for the highlight server.
+﻿"""TouchDesigner utility extension for the highlight server.
 
 Usage inside TouchDesigner:
 
@@ -16,6 +16,7 @@ table. Table columns are always replaced with fresh data.
 import json
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
+from urllib import request as _urlreq
 
 
 class HighlightEXT:
@@ -23,7 +24,7 @@ class HighlightEXT:
 
     def __init__(self, ownerComp):  # type: ignore[no-untyped-def]
         self.ownerComp = ownerComp
-        self.base_url = "http://127.0.0.1:9988"
+        self.base_url = "http://127.0.0.1:9888"
         self.webclient = None
         self._form_cursor: Dict[str, int] = {}
         self._button_cache: Dict[str, Dict[str, Any]] = {}
@@ -152,23 +153,22 @@ class HighlightEXT:
     # internal helpers
     # ------------------------------------------------------------------
     def _request_json(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        if not self.webclient:
-            raise ValueError("Web Client DAT is not configured. Call SetWebClient first.")
+        """Synchronous HTTP GET that returns parsed JSON. Does not rely on Web Client DAT."""
         url = self._build_url(endpoint, params)
-        result = self.webclient.Get(url, parse=True)  # type: ignore[attr-defined]
-        if isinstance(result, dict):
-            return result
-        if hasattr(result, "json"):
-            return result.json()
-        if hasattr(result, "data"):
-            data = result.data
-        else:
-            data = result
-        if isinstance(data, (bytes, bytearray)):
-            data = data.decode("utf-8", errors="ignore")
-        if isinstance(data, str):
-            return json.loads(data)
-        raise ValueError("Unsupported response type from Web Client DAT")
+        try:
+            with _urlreq.urlopen(url, timeout=5) as resp:
+                raw = resp.read()
+            if isinstance(raw, (bytes, bytearray)):
+                raw = raw.decode("utf-8", errors="ignore")
+            if not raw:
+                return {}
+            return json.loads(raw)
+        except Exception as e:
+            # Лаконичный лог + пустой результат, чтобы не ронять цикл
+            debug = getattr(self, "debug", True)
+            if debug:
+                print("[highlightEXT] _request_json error:", e, "URL:", url)
+            return {}
 
     def _build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> str:
         endpoint = endpoint or "/"

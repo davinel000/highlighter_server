@@ -20,8 +20,20 @@
     history.replaceState(null, '', `${location.pathname}?${usp.toString()}`);
   }
 
+  const debugMode = usp.get('debug') !== '0';
+  const agreementFlag = (usp.get('agreement') || '').toLowerCase();
+  const skipAgreement = debugMode || agreementFlag === '0' || agreementFlag === 'off' || agreementFlag === 'skip';
+
   if (window.ControlChannel) {
     window.ControlChannel.init({ group: 'sender' });
+    if (!skipAgreement) {
+      window.ControlChannel.requireAgreement?.({
+        redirectTo: '/',
+        preserveParams: ['doc', 'name', 'render', 'overlay', 'debug'],
+        force: true,
+        onError: 'redirect',
+      });
+    }
   }
 
   // ====== Управление кеглем (A− / A+) с хранением в localStorage ======
@@ -62,7 +74,6 @@
   const statusEl = document.getElementById('status');
   const clearBtn = document.getElementById('clearBtn');
   const resetBtn = document.getElementById('resetDoc');
-  const debugMode = usp.get('debug') !== '0';
 
   clientLbl.textContent = clientId;
 

@@ -14,8 +14,20 @@
     history.replaceState(null, '', `${location.pathname}?${usp.toString()}`);
   }
 
+  const debugMode = usp.get('debug') !== '0';
+  const agreementFlag = (usp.get('agreement') || '').toLowerCase();
+  const skipAgreement = debugMode || agreementFlag === '0' || agreementFlag === 'off' || agreementFlag === 'skip';
+
   if (window.ControlChannel) {
     window.ControlChannel.init({ group: 'form' });
+    if (!skipAgreement) {
+      window.ControlChannel.requireAgreement?.({
+        redirectTo: '/',
+        preserveParams: ['form', 'debug'],
+        force: true,
+        onError: 'redirect',
+      });
+    }
   }
 
   const state = {
@@ -33,7 +45,6 @@
   const successCard = document.getElementById('successCard');
   const anotherBtn = document.getElementById('anotherBtn');
   const successMessage = document.getElementById('successMessage');
-  const debugMode = usp.get('debug') !== '0';
 
   if (formSelect){
     populateForms(formId);

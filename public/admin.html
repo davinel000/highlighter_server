@@ -23,7 +23,7 @@
           </select>
         </label>
         <label class="checkbox">
-          <input type="checkbox" id="debugToggle" checked /> Debug mode
+          <input type="checkbox" id="debugToggle" /> Debug mode
         </label>
         <span></span>
       </div>
@@ -39,6 +39,7 @@
         <span></span>
       </div>
       <div class="admin-actions">
+        <button class="btn" data-nav="agreement">Agreement</button>
         <button class="btn" data-nav="highlight">Highlight</button>
         <button class="btn" data-nav="form">Survey</button>
         <button class="btn" data-nav="buttons">Buttons</button>
@@ -53,6 +54,26 @@
         <input id="navTarget" type="text" value="/docs/index_sender.html" />
       </label>
       <pre class="status" id="routerStatus">Router status pending.</pre>
+    </section>
+
+    <section class="admin-card" id="agreementSection">
+      <h2>Agreement</h2>
+      <div class="admin-grid three">
+        <div><span class="muted">Revision</span><div id="agreementRevision">—</div></div>
+        <div><span class="muted">Accepted</span><div id="agreementAccepted">—</div></div>
+        <div><span class="muted">Updated</span><div id="agreementUpdated">—</div></div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn" id="agreementRefresh">Refresh</button>
+        <button class="btn" id="agreementReset">Reset agreement</button>
+        <span class="muted" id="agreementStatus"></span>
+      </div>
+      <table id="agreementTable">
+        <thead>
+          <tr><th>Seq</th><th>Client</th><th>Revision</th><th>Accepted</th><th>ISO</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <section class="admin-card" id="formsSection">

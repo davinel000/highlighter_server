@@ -15,7 +15,7 @@ if not defined HOST_IP (
 
 call .venv\Scripts\activate.bat
 
-set "HOST=192.168.0.9"
+set "HOST=192.168.50.100"
 set "PORT=9888"
 
 echo Detected IPv4 address: %HOST_IP%

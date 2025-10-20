@@ -534,6 +534,183 @@ class FormManager:
 
 
 @dataclass
+class AgreementState:
+    revision: int = 1
+    accepted: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    next_seq: int = 1
+    updated: Optional[float] = None
+
+
+class AgreementManager:
+    def __init__(self) -> None:
+        self._state: Optional[AgreementState] = None
+        self._lock = asyncio.Lock()
+        self._path = DATA_DIR / "agreement_state.json"
+
+    def _ensure_loaded(self) -> AgreementState:
+        state = self._state
+        if state is None:
+            state = self._load_state()
+            self._state = state
+        return state
+
+    def _load_state(self) -> AgreementState:
+        path = self._path
+        if not path.exists():
+            return AgreementState()
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                raw = json.load(handle)
+        except Exception as exc:
+            LOGGER.error("Failed to load agreement state: %s", exc)
+            return AgreementState()
+        state = AgreementState()
+        state.revision = int(raw.get("revision") or 1)
+        state.next_seq = int(raw.get("nextSeq") or 1)
+        state.updated = raw.get("updated")
+        accepted_items = raw.get("accepted") or []
+        for item in accepted_items:
+            client_id = str(item.get("clientId") or "").strip()
+            if not client_id:
+                continue
+            record = {
+                "clientId": client_id,
+                "seq": int(item.get("seq") or state.next_seq),
+                "accepted": float(item.get("accepted") or 0.0),
+                "accepted_iso": item.get("accepted_iso") or "",
+                "revision": int(item.get("revision") or state.revision),
+                "meta": item.get("meta") or {},
+            }
+            state.accepted[client_id] = record
+            next_seq_candidate = record["seq"] + 1
+            if next_seq_candidate > state.next_seq:
+                state.next_seq = next_seq_candidate
+        return state
+
+    async def _save_state(self, state: AgreementState) -> None:
+        payload = {
+            "revision": state.revision,
+            "nextSeq": state.next_seq,
+            "updated": state.updated,
+            "accepted": sorted(
+                [
+                    {
+                        "clientId": record["clientId"],
+                        "seq": record.get("seq", 0),
+                        "accepted": record.get("accepted"),
+                        "accepted_iso": record.get("accepted_iso"),
+                        "revision": record.get("revision"),
+                        "meta": record.get("meta") or {},
+                    }
+                    for record in state.accepted.values()
+                ],
+                key=lambda item: item.get("seq", 0),
+            ),
+        }
+        tmp_file: Optional[Path] = None
+        try:
+            with NamedTemporaryFile("w", encoding="utf-8", delete=False, dir=DATA_DIR) as tmp:
+                json.dump(payload, tmp, ensure_ascii=False)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+                tmp_file = Path(tmp.name)
+            os.replace(tmp_file, self._path)
+        finally:
+            if tmp_file and tmp_file.exists():
+                tmp_file.unlink(missing_ok=True)
+        self._state = state
+
+    def _sanitize_meta(self, meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        if not meta:
+            return {}
+        cleaned: Dict[str, Any] = {}
+        for key, value in meta.items():
+            if not isinstance(key, str):
+                key = str(key)
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                cleaned[key] = value
+            elif isinstance(value, dict):
+                cleaned[key] = self._sanitize_meta(value)
+            elif isinstance(value, (list, tuple)):
+                cleaned[key] = [
+                    item if isinstance(item, (str, int, float, bool)) or item is None else str(item)
+                    for item in value
+                ]
+            else:
+                cleaned[key] = str(value)
+        return cleaned
+
+    async def accept(self, client_id: str, meta: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        normalized = client_id.strip()[:128]
+        if not normalized:
+            raise ValueError("client_id required")
+        async with self._lock:
+            state = self._ensure_loaded()
+            now = time.time()
+            record = state.accepted.get(normalized)
+            if record is None:
+                seq = state.next_seq
+                record = {"clientId": normalized, "seq": seq}
+                state.next_seq = seq + 1
+            record["accepted"] = now
+            record["accepted_iso"] = _isoformat_utc(now)
+            record["revision"] = state.revision
+            record["meta"] = self._sanitize_meta(meta)
+            state.accepted[normalized] = record
+            state.updated = now
+            await self._save_state(state)
+            return dict(record)
+
+    async def reset(self) -> Dict[str, Any]:
+        async with self._lock:
+            state = self._ensure_loaded()
+            state.revision += 1
+            state.accepted.clear()
+            state.next_seq = 1
+            state.updated = time.time()
+            await self._save_state(state)
+            return {
+                "revision": state.revision,
+                "totalAccepted": 0,
+                "updated": state.updated,
+            }
+
+    async def summary(self) -> Dict[str, Any]:
+        async with self._lock:
+            state = self._ensure_loaded()
+            return {
+                "revision": state.revision,
+                "totalAccepted": len(state.accepted),
+                "updated": state.updated,
+            }
+
+    async def status(self, client_id: str) -> Dict[str, Any]:
+        normalized = client_id.strip()[:128]
+        async with self._lock:
+            state = self._ensure_loaded()
+            record = state.accepted.get(normalized)
+            return {
+                "revision": state.revision,
+                "accepted": record is not None,
+                "acceptedAt": record.get("accepted") if record else None,
+                "acceptedIso": record.get("accepted_iso") if record else None,
+                "totalAccepted": len(state.accepted),
+                "updated": state.updated,
+            }
+
+    async def records(self) -> Dict[str, Any]:
+        async with self._lock:
+            state = self._ensure_loaded()
+            records = sorted(state.accepted.values(), key=lambda item: item.get("seq", 0))
+            return {
+                "revision": state.revision,
+                "totalAccepted": len(records),
+                "updated": state.updated,
+                "records": [dict(item) for item in records],
+            }
+
+
+@dataclass
 class ButtonPanelState:
     panel_id: str
     buttons: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -782,6 +959,7 @@ class ButtonManager:
 
 forms_store = FormManager()
 buttons_store = ButtonManager()
+agreement_store = AgreementManager()
 
 
 class NavigationHub:
@@ -876,6 +1054,11 @@ class ButtonConfigRequest(BaseModel):
     panelId: Optional[str] = None
     cooldown: Optional[float] = None
     locked: Optional[bool] = None
+
+
+class AgreementAcceptRequest(BaseModel):
+    clientId: str = Field(..., min_length=1, max_length=128)
+    meta: Optional[Dict[str, Any]] = None
 
 
 def _form_error_to_http(exc: FormError) -> None:
@@ -979,6 +1162,13 @@ def hash_id(value: str) -> str:
         return hashlib.sha1(value.encode("utf-8")).hexdigest()[:10]
     except Exception:
         return value[:10]
+
+
+def _isoformat_utc(ts: float) -> str:
+    try:
+        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
+    except Exception:
+        return ""
 
 
 def client_ranges(tokens: List[str], votes: List[Dict[str, str]], client_id: str) -> List[Dict]:
@@ -1256,6 +1446,38 @@ async def api_forms_results(
 async def api_forms_clear(form: Optional[str] = Query(None)) -> Dict:
     form_id = sanitize_form_id(form)
     return await forms_store.clear(form_id)
+
+
+@app.get("/api/agreement/status")
+async def api_agreement_status(client: Optional[str] = Query(None)) -> Dict[str, Any]:
+    client_id = (client or "").strip()
+    if client_id:
+        return await agreement_store.status(client_id)
+    return await agreement_store.summary()
+
+
+@app.get("/api/agreement/records")
+async def api_agreement_records() -> Dict[str, Any]:
+    return await agreement_store.records()
+
+
+@app.post("/api/agreement/accept")
+async def api_agreement_accept(payload: AgreementAcceptRequest) -> Dict[str, Any]:
+    client_id = payload.clientId.strip()
+    if not client_id:
+        raise HTTPException(status_code=400, detail="clientId is required")
+    try:
+        return await agreement_store.accept(client_id, payload.meta)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:  # pragma: no cover
+        LOGGER.error("Agreement accept failed for %s: %s", client_id, exc)
+        raise HTTPException(status_code=500, detail="Unable to record agreement")
+
+
+@app.post("/api/agreement/reset")
+async def api_agreement_reset() -> Dict[str, Any]:
+    return await agreement_store.reset()
 
 
 @app.get("/api/triggers/config")

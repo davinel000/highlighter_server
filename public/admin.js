@@ -32,6 +32,14 @@
   const panelCountsTable = document.getElementById('panelCounts').querySelector('tbody');
   const panelEventsTable = document.getElementById('panelEvents').querySelector('tbody');
 
+  const agreementRevision = document.getElementById('agreementRevision');
+  const agreementAccepted = document.getElementById('agreementAccepted');
+  const agreementUpdated = document.getElementById('agreementUpdated');
+  const agreementRefresh = document.getElementById('agreementRefresh');
+  const agreementReset = document.getElementById('agreementReset');
+  const agreementStatus = document.getElementById('agreementStatus');
+  const agreementTableBody = document.getElementById('agreementTable').querySelector('tbody');
+
   const state = {
     formId: formIdInput.value.trim() || 'feedback',
     panelId: panelIdInput.value.trim() || 'main',
@@ -39,19 +47,20 @@
 
   const navState = {
     preset: 'highlight',
-    debug: true,
+    debug: false,
     highlightDoc: null,
     highlightSource: null,
   };
 
   const NAV_PRESETS = {
+    agreement: buildAgreementTarget,
     highlight: buildHighlightTarget,
     form: buildFormTarget,
     buttons: buildButtonsTarget,
     cloud: buildCloudTarget,
   };
 
-  navState.debug = debugToggle ? !!debugToggle.checked : true;
+  navState.debug = debugToggle ? !!debugToggle.checked : false;
 
   if (debugToggle) {
     debugToggle.addEventListener('change', () => {
@@ -133,6 +142,111 @@
     }
   }
 
+  function buildAgreementTarget() {
+    return '/';
+  }
+
+  // ----- Agreement -----
+  function renderAgreementSummary(data) {
+    if (!agreementRevision || !agreementAccepted || !agreementUpdated) return;
+    const revision = data && data.revision != null ? data.revision : '—';
+    const total = data && data.totalAccepted != null ? data.totalAccepted : 0;
+    const updated = data && data.updated ? Number(data.updated) : null;
+    agreementRevision.textContent = revision;
+    agreementAccepted.textContent = total;
+    agreementUpdated.textContent = updated ? new Date(updated * 1000).toLocaleString() : '—';
+  }
+
+  function renderAgreementRecords(records) {
+    if (!agreementTableBody) return;
+    agreementTableBody.innerHTML = '';
+    const rows = Array.isArray(records) ? records : [];
+    if (!rows.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="5" class="muted">No agreement records yet.</td>';
+      agreementTableBody.appendChild(tr);
+      return;
+    }
+    rows.forEach((record) => {
+      const seq = record.seq ?? '';
+      const client = escapeHTML(record.clientId ?? '');
+      const revision = record.revision ?? '';
+      const acceptedLocal =
+        typeof record.accepted === 'number' ? new Date(record.accepted * 1000).toLocaleString() : '';
+      const acceptedIso = escapeHTML(record.accepted_iso ?? '');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${seq}</td>
+                      <td>${client}</td>
+                      <td>${revision}</td>
+                      <td>${escapeHTML(acceptedLocal)}</td>
+                      <td>${acceptedIso}</td>`;
+      agreementTableBody.appendChild(tr);
+    });
+  }
+
+  async function loadAgreementSummary() {
+    if (!agreementRevision) return;
+    try {
+      const summary = await fetchJSON('/api/agreement/status');
+      renderAgreementSummary(summary);
+      if (agreementStatus) {
+        agreementStatus.textContent = '';
+        agreementStatus.dataset.tone = '';
+      }
+    } catch (err) {
+      if (agreementStatus) {
+        agreementStatus.textContent = `Summary error: ${err}`;
+        agreementStatus.dataset.tone = 'error';
+      }
+      renderAgreementSummary(null);
+    }
+  }
+
+  async function loadAgreementRecords() {
+    if (!agreementTableBody) return;
+    try {
+      const data = await fetchJSON('/api/agreement/records');
+      renderAgreementRecords(data.records || []);
+      if (agreementStatus) {
+        agreementStatus.textContent = '';
+        agreementStatus.dataset.tone = '';
+      }
+    } catch (err) {
+      if (agreementStatus) {
+        agreementStatus.textContent = `Records error: ${err}`;
+        agreementStatus.dataset.tone = 'error';
+      }
+      renderAgreementRecords([]);
+    }
+  }
+
+  if (agreementRefresh) {
+    agreementRefresh.addEventListener('click', async () => {
+      await loadAgreementSummary();
+      await loadAgreementRecords();
+    });
+  }
+
+  if (agreementReset) {
+    agreementReset.addEventListener('click', async () => {
+      if (!confirm('Reset agreement acceptance for all participants?')) return;
+      try {
+        const result = await postJSON('/api/agreement/reset');
+        if (agreementStatus) {
+          agreementStatus.textContent = `Agreement reset. Revision ${result?.revision ?? '—'}.`;
+          agreementStatus.dataset.tone = 'warn';
+        }
+        await loadAgreementSummary();
+        await loadAgreementRecords();
+      } catch (err) {
+        if (agreementStatus) {
+          agreementStatus.textContent = `Reset failed: ${err}`;
+          agreementStatus.dataset.tone = 'error';
+        }
+      }
+    });
+  }
+
   function buildHighlightTarget() {
     const doc = navState.highlightDoc || highlightDocSelect.value || 'doc1';
     const source = navState.highlightSource || highlightSourceSelect.value || 'text.txt';
@@ -177,7 +291,7 @@
     if (!highlightDocSelect || !highlightSourceSelect) {
       navState.highlightDoc = navState.highlightDoc || 'doc1';
       navState.highlightSource = navState.highlightSource || 'text.txt';
-      applyPreset('highlight');
+      applyPreset(navState.preset || 'highlight');
       return;
     }
     try {
@@ -218,7 +332,7 @@
         highlightSourceSelect.value = navState.highlightSource;
       }
 
-      applyPreset('highlight');
+      applyPreset(navState.preset || 'highlight');
     } catch (err) {
       console.error('Failed to load docs/sources', err);
     }
@@ -415,13 +529,18 @@
     return String(str).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  applyPreset(navState.preset);
   loadHighlightOptions();
   loadFormConfig();
   loadFormResults();
   loadPanelState();
+  loadAgreementSummary();
+  loadAgreementRecords();
   updateRouterStatus();
 
   setInterval(loadFormResults, 15000);
   setInterval(loadPanelState, 8000);
   setInterval(updateRouterStatus, 10000);
+  setInterval(loadAgreementSummary, 15000);
+  setInterval(loadAgreementRecords, 30000);
 })();

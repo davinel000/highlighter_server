@@ -14,8 +14,20 @@
     history.replaceState(null, '', `${location.pathname}?${usp.toString()}`);
   }
 
+  const debugMode = usp.get('debug') !== '0';
+  const agreementFlag = (usp.get('agreement') || '').toLowerCase();
+  const skipAgreement = debugMode || agreementFlag === '0' || agreementFlag === 'off' || agreementFlag === 'skip';
+
   if (window.ControlChannel) {
     window.ControlChannel.init({ group: 'buttons' });
+    if (!skipAgreement) {
+      window.ControlChannel.requireAgreement?.({
+        redirectTo: '/',
+        preserveParams: ['panel', 'debug'],
+        force: true,
+        onError: 'redirect',
+      });
+    }
   }
 
   const panelSelect = document.getElementById('panelSelect');
@@ -24,7 +36,6 @@
   const cooldownPill = document.getElementById('cooldownPill');
   const cooldownLbl = document.getElementById('cooldownLbl');
   const buttonsGrid = document.getElementById('buttonsGrid');
-  const debugMode = usp.get('debug') !== '0';
 
   clientLbl.textContent = clientId;
 

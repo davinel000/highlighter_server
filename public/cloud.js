@@ -8,9 +8,19 @@ const stage = document.getElementById('stage');
 const docSelect = document.getElementById('docSelect');
 let activeColors = 'all', minFreq = 1, preferLongest = true;
 const debugMode = usp.get('debug') !== '0';
+const agreementFlag = (usp.get('agreement') || '').toLowerCase();
+const skipAgreement = debugMode || agreementFlag === '0' || agreementFlag === 'off' || agreementFlag === 'skip';
 
   if (window.ControlChannel) {
     window.ControlChannel.init({ group: 'cloud' });
+    if (!skipAgreement) {
+      window.ControlChannel.requireAgreement?.({
+        redirectTo: '/',
+        preserveParams: ['doc', 'debug'],
+        force: true,
+        onError: 'redirect',
+      });
+    }
   }
 
   if (docSelect) {
