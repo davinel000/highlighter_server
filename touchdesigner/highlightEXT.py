@@ -211,3 +211,40 @@ class HighlightEXT:
         except (TypeError, ValueError):
             return ""
         return datetime.fromtimestamp(ts).isoformat(sep=" ", timespec="seconds")
+
+
+    def SendNavigate(self, target: str, group: str = "all",
+                    preserveClient: bool = True, preserveParams: bool = False,
+                    action: str = "navigate") -> bool:
+        """
+        Отправляет команду навигации всем клиентам указанной группы.
+        target — строка пути + query, НАПР.: '/docs/index_sender.html?doc=...'
+        """
+        url = self.base_url.rstrip('/') + '/api/router/send'
+        payload = {
+            "group": group,
+            "action": action,                # 'navigate' | 'reload'
+            "target": target,                # только путь+query, без протокола/хоста
+            "preserveClient": preserveClient,
+            "preserveParams": preserveParams
+        }
+        data = json.dumps(payload).encode("utf-8")
+        req = _urlreq.Request(url, data=data, method='POST',
+                            headers={'Content-Type': 'application/json'})
+        try:
+            with _urlreq.urlopen(req, timeout=5) as resp:
+                return 200 <= resp.status < 300
+        except Exception as e:
+            if getattr(self, "debug", True):
+                print("[highlightEXT] SendNavigate error:", e, "URL:", url, "TARGET:", target)
+            return False
+
+    # Хелперы под твои два кейса:
+    def NavigateSender(self, doc: str, name: str, render: str = "markdown",
+                    overlay: str = "own", debug: int = 0, group: str = "all") -> bool:
+        target = f"/docs/index_sender.html?doc={doc}&name={name}&render={render}&overlay={overlay}&debug={debug}"
+        return self.SendNavigate(target, group=group)
+
+    def NavigateForm(self, form: str = "feedback", debug: int = 0, group: str = "all") -> bool:
+        target = f"/docs/form.html?form={form}&debug={debug}"
+        return self.SendNavigate(target, group=group)
